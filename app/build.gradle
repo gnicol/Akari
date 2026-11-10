@@ -7,16 +7,21 @@ def localProps = new Properties()
 def localFile = rootProject.file('local.properties')
 if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
 
+// Local-only signing configuration. Never upload this file or its keystore to the repository.
+def signingProps = new Properties()
+def signingFile = rootProject.file('signing.properties')
+if (signingFile.exists()) signingFile.withInputStream { signingProps.load(it) }
+
 android {
     namespace = 'com.konvar.tvhome'
     compileSdk = 36
 
     defaultConfig {
-        applicationId = 'com.konvar.tvhome'
+        applicationId = 'com.konvar.tvhome.trakttest'
         minSdk = 26
         targetSdk = 36
-        versionCode = 39
-        versionName = '0.8.2'
+        versionCode = 40
+        versionName = '0.8.2-trakt-test4'
         buildConfigField 'String', 'TRAKT_CLIENT_ID', "\"${localProps.getProperty('TRAKT_CLIENT_ID', '')}\""
         buildConfigField 'String', 'TRAKT_CLIENT_SECRET', "\"${localProps.getProperty('TRAKT_CLIENT_SECRET', '')}\""
         // Other tracking services, from the same file: Simkl (PIN sign-in) and the Nuvio account (Supabase).
@@ -25,19 +30,18 @@ android {
         // Akari's own TMDB key, built in so nobody has to enter one: from the TMDB_API_KEY secret in GitHub Actions,
         // or from local.properties for local builds.
         buildConfigField 'String', 'TMDB_API_KEY', "\"${System.getenv('TMDB_API_KEY') ?: localProps.getProperty('TMDB_API_KEY', '')}\""
-        // Release builds (signed with Akari's key) look for updates on GitHub; local builds cannot install them.
-        buildConfigField 'boolean', 'UPDATES', System.getenv('AKARI_KEYSTORE') ? 'true' : 'false'
+        // Fork releases are installed manually; never offer upstream APKs with a different package/signature.
+        buildConfigField 'boolean', 'UPDATES', 'false'
         buildConfigField 'String', 'SUPABASE_ANON_KEY', "\"${System.getenv('NUVIO_SUPABASE_ANON_KEY') ?: localProps.getProperty('NUVIO_SUPABASE_ANON_KEY', '')}\""
     }
 
     signingConfigs {
-        // Release key from the environment (GitHub Actions secrets); local builds without it use the debug key.
-        if (System.getenv('AKARI_KEYSTORE')) {
+        if (signingFile.exists()) {
             release {
-                storeFile = file(System.getenv('AKARI_KEYSTORE'))
-                storePassword = System.getenv('AKARI_KEYSTORE_PASSWORD')
-                keyAlias = System.getenv('AKARI_KEY_ALIAS')
-                keyPassword = System.getenv('AKARI_KEY_PASSWORD')
+                storeFile = rootProject.file(signingProps.getProperty('storeFile'))
+                storePassword = signingProps.getProperty('storePassword')
+                keyAlias = signingProps.getProperty('keyAlias')
+                keyPassword = signingProps.getProperty('keyPassword')
             }
         }
     }
@@ -48,7 +52,8 @@ android {
             minifyEnabled = true
             shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig = System.getenv('AKARI_KEYSTORE') ? signingConfigs.release : signingConfigs.debug
+            // CI produces unsigned APKs. A release requires the preserved local signing key.
+            signingConfig = signingFile.exists() ? signingConfigs.release : null
         }
     }
 
@@ -63,6 +68,8 @@ android {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'com.google.zxing:core:3.5.4'
 }

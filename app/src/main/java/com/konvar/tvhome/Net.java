@@ -30,6 +30,8 @@ final class Net {
     static final ExecutorService API = Executors.newSingleThreadExecutor();
     static final Handler MAIN = new Handler(Looper.getMainLooper());
 
+    private static final TraktBackoff TRAKT_BACKOFF = new TraktBackoff();
+
     private Net() {
     }
 
@@ -50,8 +52,24 @@ final class Net {
     /** Like jsonOnce, but waits and retries when the server says too many requests (429), as Trakt does on bursts. */
     static Response json(String method, String url, java.util.Map<String, String> headers, String body)
             throws IOException {
+        boolean trakt = url.startsWith("https://api.trakt.tv/");
         for (int attempt = 0; ; attempt++) {
+            if (trakt) {
+                long remaining = TRAKT_BACKOFF.remaining(android.os.SystemClock.elapsedRealtime());
+                if (remaining > 0) {
+                    Response limited = new Response(429, "");
+                    limited.retryAfter = Long.toString((remaining + 999) / 1000);
+                    return limited;
+                }
+            }
             Response r = jsonOnce(method, url, headers, body);
+            if (trakt && r.code == 429) {
+                long now = android.os.SystemClock.elapsedRealtime();
+                TRAKT_BACKOFF.limited(r.retryAfter, now);
+                android.util.Log.w("TvHomeTrakt", "API cooldown: "
+                        + ((TRAKT_BACKOFF.remaining(now) + 999) / 1000) + " seconds");
+                return r;
+            }
             if (r.code != 429 || attempt >= 5) return r;
             long wait = 1000L * (attempt + 1);
             try {
@@ -67,7 +85,7 @@ final class Net {
         }
     }
 
-    private static Response jsonOnce(String method, String url, java.util.Map<String, String> headers, String body)
+    static Response jsonOnce(String method, String url, java.util.Map<String, String> headers, String body)
             throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(8000);

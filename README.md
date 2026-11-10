@@ -1,233 +1,123 @@
-<div align="center">
+# Akari Test
 
-# Akari 明かり
+Personal, unofficial fork of [konvar/Akari](https://github.com/konvar/Akari), based on **v0.8.2**.
+It adds Trakt device sign-in for apps without a Client Secret and keeps a separate package so the
+upstream launcher can stay installed. This app uses Trakt but is not endorsed or certified by Trakt.
 
-**A fast, ad-free launcher for Google TV and Android TV, built around what you watch.**
+**[Download the signed APK](https://github.com/gnicol/Akari/releases/latest)**
 
-Continue Watching, Upcoming and your lists from Trakt, Simkl, MDBList or your Nuvio account, with logos, ratings and
-synopses in a hero at the top, and everything opening straight in your player app: Nuvio, Stremio, Wuplay or STRMR.
+- App name: **Akari Test**
+- Package: `com.konvar.tvhome.trakttest`
+- Development/default branch: `trakt-test`
+- Android 8 / API 26 or newer; no root required
+- License: GPL-3.0, inherited from Akari. See [LICENSE](LICENSE).
 
-[Download the latest release](../../releases/latest)
+## Changes from upstream
 
-[![Akari in use: Home, details, search and lists](docs/demo.webp)](https://cdn.jsdelivr.net/gh/konvar/Akari@main/docs/demo.mp4)
+- Trakt device-code login and renewal use `auth.trakt.tv` and omit `client_secret`.
+- A Client ID is enough to start sign-in. Failed or expired code dialogs show retry instructions.
+- Next-episode lookups cover the **40 most recently watched eligible shows**, rather than checking
+  a lifetime of shows before displaying Continue Watching. This does not modify Trakt history.
+  Older shows may lack next-episode cards and completion checkmarks in this trial.
+- A shared cooldown honors Trakt's `Retry-After` response instead of repeatedly retrying a 429.
+- Initial favorites: SmartTube stable, Stremio, Same Old Table, Premiumize, TizenTube.
+  Your apps is the initial focus; Stremio opens titles and SmartTube plays trailers.
+- Separate app storage and signing. Original Akari, Projectivy and CleanYourTV are not replaced.
+- Automatic upstream APK updates are disabled. Install this fork's releases manually.
 
-<sub>Click for the full-quality video.</sub>
+## Install or update on another TV
 
-</div>
+Download `Akari-Test-<version>.apk` and `SHA256SUMS` from Releases. On macOS verify with
+`shasum -a 256 -c SHA256SUMS` in the download directory; on Linux use `sha256sum -c SHA256SUMS`.
 
-## Contents
-
-- [Features](#features)
-- [Screenshots](#screenshots)
-- [Requirements](#requirements)
-- [Install](#install)
-- [Set up](#set-up)
-- [Remote buttons and voice](#remote-buttons-and-voice)
-- [Build from source](#build-from-source)
-- [Roadmap](#roadmap)
-- [Credits](#credits)
-- [License](#license)
-
-## Features
-
-**Home**
-- A hero for the focused title: clear logo, year, genres, age rating, ratings from IMDb, Trakt, TMDB, Rotten Tomatoes
-  and more, and the full synopsis, which scrolls slowly when it is long.
-- Continue Watching with time left (`23m left`), `New episode` and `Up next` badges.
-- Upcoming episodes of the shows you follow, with a live countdown before they air (style and timing configurable).
-- Content rows: trending, popular, box office, most watched, most anticipated, popular lists, and Airing tonight.
-- Your apps, in the order you want: hold OK on an app, move it with Left and Right, and press OK to put it down.
-- Checkmarks on everything you have watched; Hide watched in every grid.
-- Your own ratings in the corner of every poster, season and episode, as the old Trakt website showed them: a folded
-  corner from grey (1) to red (10), from Trakt, Simkl or MDBList.
-- Clock and weather (automatic location or a town you choose); both can be hidden.
-- A screensaver after Nuvio's Ambient Mode: trending and popular titles full screen, slowly zooming, with their clear
-  logo and genres. Its delay is set in Settings → System → Screensaver.
-- Updates itself: a new release on GitHub shows its notes with Update now, Later and Skip this version.
-- The buttons in the top bar adapt to the picture behind them, so they stay readable on bright artwork.
-- Everything next to the focused card is fetched ahead, so artwork, logos and ratings appear instantly.
-- Rows refresh as soon as the TV wakes up or comes online, and keep what they show while the connection returns. A
-  small note at the bottom says what changed (`Continue watching: 2 new · Upcoming updated`), and new cards are
-  marked `New` for a minute.
-- Optional trailer behind the hero: after a few seconds on a title (2-10 s, your choice), its trailer plays muted or
-  with sound, blended into the page like the backdrop. IMDb's own trailer first (no ads, no extra player); YouTube as a
-  backup, shown only once the trailer itself plays. Neighbouring trailers are looked up ahead; Wi-Fi or Ethernet only.
-
-**OK and hold OK**
-- OK on a movie or show opens its page; Continue Watching and Upcoming cards resume or play.
-- Hold OK on any movie, show or episode opens a menu: Play or Resume, Details, Rate (1-10), Add to a list (your
-  Watchlist and lists from Trakt or MDBList, or Simkl's status lists), and Trailer.
-
-**Details pages**
-- Play or Resume (`Resume S02E05`) straight in your player, and a Trailer button that plays the trailer full screen
-  inside Akari, with sound (IMDb's own trailer first, YouTube as a backup; OK pauses).
-- Seasons and episodes with watched checkmarks and progress, cast (actor and character), and related titles that preview in the header.
-- A season ratings chart: every episode's IMDb rating, coloured from weak to great.
-- Works without a Trakt app too: the page is filled from TMDB (synopsis, cast with photos, recommendations).
-- The movie's collection (for example every Dark Knight film), in release order.
-- Network and production companies as logo cards; each opens a grid of its most popular titles.
-
-**Grids**
-- Back from a title, search results and grids return to the same card.
-- Show more on any row opens a full grid, with filters: hide watched, several genres, single years or a range, and sort.
-
-**Search**
-- Movies, shows and Trakt lists as you type, by voice, and your last five searches while the box is empty
-  (pick one to search again, or remove it).
-- Trakt lists appear as their first poster with the next four fanned out behind it, as on Trakt's site.
-
-**Tracking**
-- Trakt, Simkl, MDBList or your Nuvio account, chosen in Settings, like in Nuvio.
-- Continue Watching follows Nuvio's rules: only shows you dropped are left out, and a window setting keeps titles
-  watched in the last 14 to 365 days, or all history (the default).
-- A calendar of upcoming episodes (the last one stays on screen when Trakt is busy), and new-episode notifications.
-
-**Player apps**
-- [Nuvio](https://github.com/NuvioMedia/NuvioTV): Play and Resume open Nuvio's stream picker for the exact movie or
-  episode, with its artwork.
-- [Stremio](https://www.stremio.com), and any app that opens `stremio://` links: Play and Resume open the streams of
-  the exact movie or episode (`stremio:///detail/{type}/{id}/{videoId}`).
-- [Wuplay](https://github.com/wuplayapp/wuplay-releases): the exact movie or episode
-  (`wuplay://detail/{type}/{id}/{videoId}`).
-- [STRMR](https://github.com/strmrdev/strmr-releases): the movie, or the exact episode
-  (`strmr://movie/{id}`, `strmr://series/{id}/{season}/{episode}`).
-- Choose the player in Settings → Playback; Continue Watching, Upcoming, voice and details pages all use it.
-
-**Settings**
-- Row order and visibility (by default: Your apps, Continue watching, Upcoming, then trending, popular and box
-  office rows; the others can be switched on), the row focused when the TV starts, player app, trailer app, remote buttons, tracking
-  provider, weather, and API keys entered from your phone with a QR code.
-
-## Screenshots
-
-| | |
-|---|---|
-| ![Hero](docs/screenshots/02-hero.jpg) | ![Rows](docs/screenshots/03-rows.jpg) |
-| ![Details](docs/screenshots/04-details.jpg) | ![Episodes](docs/screenshots/05-episodes.jpg) |
-| ![Ratings chart](docs/screenshots/06-ratings-chart.jpg) | ![Related](docs/screenshots/07-related.jpg) |
-| ![Calendar](docs/screenshots/08-calendar.jpg) | ![Grid](docs/screenshots/09-grid.jpg) |
-| ![Filters](docs/screenshots/10-filters.jpg) | ![Settings](docs/screenshots/11-settings.jpg) |
-| ![Tracking](docs/screenshots/12-tracking.jpg) | ![Search](docs/screenshots/13-search.jpg) |
-
-## Requirements
-
-- Android TV or Google TV, Android 8.0 or newer.
-- A player app that opens titles: [Nuvio](https://github.com/NuvioMedia/NuvioTV), [Stremio](https://www.stremio.com),
-  [Wuplay](https://github.com/wuplayapp/wuplay-releases) or [STRMR](https://github.com/strmrdev/strmr-releases). Any other
-  app that opens `stremio://` links is detected too.
-- Optional: a free account and API key for each service you want (Trakt, Simkl or MDBList for tracking; OMDb and
-  MDBList for ratings). TMDB (artwork, age ratings, trailers, cast) is built in: nothing to set up.
-
-## Install
-
-1. Download `Akari-x.y.z.apk` from the [latest release](../../releases/latest).
-2. Install it on the TV, for example with the Downloader app, a file manager, or from a computer:
-
-   ```sh
-   adb connect <tv-ip>
-   adb install Akari-0.8.2.apk
-   ```
-
-3. Make it the home screen. Android TV usually asks which home app to use the next time you press Home. Google TV does
-   not, so set it once from a computer:
-
-   ```sh
-   adb shell cmd package set-home-activity com.konvar.tvhome/.MainActivity
-   ```
-
-   To go back to the stock home screen, run the same command with the stock launcher's package, or uninstall Akari.
-
-4. Optional, from a computer:
-
-   ```sh
-   # Continue Watching from apps that publish it to Android TV's "Watch next"
-   adb shell pm grant com.konvar.tvhome android.permission.READ_TV_LISTINGS
-   # New-episode notifications (Android 13+)
-   adb shell pm grant com.konvar.tvhome android.permission.POST_NOTIFICATIONS
-   # Screensaver: on TVs without "Modify system settings" (or with Google's screensaver app removed)
-   adb shell appops set com.konvar.tvhome WRITE_SETTINGS allow
-   adb shell pm grant com.konvar.tvhome android.permission.WRITE_SECURE_SETTINGS
-   ```
-
-   Akari 0.7.0 and later update themselves; older versions need this release installed once by hand.
-
-## Set up
-
-Open **Settings** (the gear at the top right of Home).
-
-1. **API keys.** Each key is typed on your phone: scan the QR code, paste the key, done. Keys stay on the TV.
-   - **MDBList** (free, [mdblist.com](https://mdblist.com/preferences/)): the ratings row, and MDBList tracking.
-   - **OMDb** (free, [omdbapi.com](https://www.omdbapi.com/apikey.aspx)): IMDb ratings of episodes.
-   - **Trakt app** and **Simkl app**: release builds have no built-in Trakt or Simkl app. Create your own (free) and enter
-     its IDs here:
-     - Trakt: [trakt.tv/oauth/applications](https://trakt.tv/oauth/applications), redirect URI `urn:ietf:wg:oauth:2.0:oob`.
-       Enter the Client ID and Client Secret.
-     - Simkl: [simkl.com/settings/developer](https://simkl.com/settings/developer). Enter the Client ID.
-2. **Tracking.** Choose where Continue Watching and the checkmarks come from, sign in with the code shown on screen,
-   and set how far back Continue Watching goes.
-3. **Playback.** Pick the player app, the trailer app, and the remote buttons.
-4. **Home rows.** Show, hide and reorder the rows (hold OK to move one), pick the row focused when the TV starts, and
-   turn on the trailer behind the hero (muted or with sound, and after how many seconds).
-
-## Remote buttons and voice
-
-Remote buttons (such as Netflix or YouTube keys) and "play …" voice requests are handled by Akari's accessibility
-service. Enable it once in the TV's Settings → Accessibility → Akari, or from a computer:
+Enable ADB debugging and accept the TV's authorization prompt, then run:
 
 ```sh
-adb shell settings put secure enabled_accessibility_services com.konvar.tvhome/.InputKeyService
-adb shell settings put secure accessibility_enabled 1
+adb connect TV_IP:5555
+adb -s TV_IP:5555 install -r Akari-Test-0.8.2-trakt-test4.apk
+adb -s TV_IP:5555 shell am start -n com.konvar.tvhome.trakttest/com.konvar.tvhome.MainActivity
 ```
 
-Then choose what each button opens in **Settings → Playback → Remote buttons**: the player app, a YouTube app, any app,
-or nothing. **Add a remote button** sets up any other key.
+`-r` preserves existing Akari Test data when the signing certificate matches. This package can coexist
+with official Akari. Installation does **not** configure Home-button interception or replace the current
+launcher. Open Akari Test manually to try it, then choose it in your existing Home-button helper if desired.
+No accessibility or secure-settings grants are needed for the Trakt trial itself.
 
-## Build from source
+Every TV stores its own account connection. In Akari Test:
 
-Requirements: JDK 17 and the Android SDK (Android Studio includes both).
+1. Open Settings > API keys > Trakt app Client ID. Scan the QR and paste your own Trakt app's Client ID.
+   No Client Secret is needed. A new Trakt application can be registered at
+   [Trakt Developer](https://developer.trakt.tv/). The device flow does not use a browser callback;
+   this build retains `urn:ietf:wg:oauth:2.0:oob` in token renewal requests.
+2. Open Settings > Tracking > Trakt, scan the approval QR, and authorize in your browser.
+3. Confirm Connected / In use. Continue Watching and Upcoming load below your apps.
+
+To undo the trial, restore your previous target in the Home-button helper if you changed it, then
+optionally uninstall **Akari Test**. Uninstalling removes its settings and login, not the original launcher.
+
+## Build and signing
+
+Requirements: JDK 21, Android SDK platform 36 / build-tools 36.0.0, Python 3 for release verification.
+Set `JAVA_HOME` and `ANDROID_HOME` for your machine, or put the SDK path in ignored `local.properties`.
 
 ```sh
-git clone https://github.com/konvar/Akari.git
+git clone --branch trakt-test https://github.com/gnicol/Akari.git
 cd Akari
-./gradlew assembleRelease
+./gradlew --no-daemon testDebugUnitTest assembleRelease
 ```
 
-The APK is in `app/build/outputs/apk/release/`. Without a signing key, local builds are signed with the debug key.
+Without `signing.properties`, the release APK is **unsigned** and cannot be installed. GitHub Actions
+builds this unsigned artifact and runs the tests. It has no signing key or account credentials.
+Debug builds use the normal development key and are not distributed as releases.
 
-Optional: put your own app IDs in `local.properties` (never committed) to build them in, instead of entering them in
-Settings:
+Maintainer releases use a local `signing.properties` file containing `storeFile`, `storePassword`,
+`keyAlias` and `keyPassword`, with a private keystore outside Git. Both are ignored. Preserve the original
+trial's key: replacing it prevents updates to existing installations. The certificate subject is
+Android Debug because the initial trial used that development key; continuity is intentional for this
+personal test package. Do not treat it as a new production signing identity.
 
-```properties
-TRAKT_CLIENT_ID=...
-TRAKT_CLIENT_SECRET=...
-SIMKL_CLIENT_ID=...
-# TMDB key for artwork, age ratings, trailers and cast (release builds get Akari's own)
-TMDB_API_KEY=...
-# The Nuvio account option needs Nuvio's sync backend
-NUVIO_SUPABASE_URL=...
-NUVIO_SUPABASE_ANON_KEY=...
+Expected signer SHA-256:
+
+```text
+f4c187acf197544630d714ae95bb9cf15cb0dfcb0b06cadebddccbb59a36913e
 ```
 
-Releases are built by GitHub Actions when a `v*` tag is pushed (`.github/workflows/release.yml`).
+With signing configured, run `./tools/build-release.sh`. It runs the tests, builds, verifies package and
+signer, and writes the signed APK plus `SHA256SUMS` to ignored `release-output/`. It refuses builds with
+personal API credentials configured. The preserved signing key stays on the maintainer's Mac and is
+not uploaded to GitHub or GitHub Actions. Keep a separate private backup of it.
 
-## Roadmap
+## Bring in upstream updates
 
-- **More player apps.** Nuvio, Stremio, Wuplay and STRMR work today. Other apps that open movies and shows by IMDb or
-  TMDB id can be added the same way.
-- **Home rows from TMDB:** recommendations based on what you watch, and rows per streaming service.
+```sh
+git remote add upstream https://github.com/konvar/Akari.git  # once, if absent
+git fetch upstream --tags
+git switch trakt-test
+git merge <new-upstream-release-tag>
+```
 
-## Credits
+Resolve conflicts while preserving our application ID, signing policy, OAuth changes, tests and favorite
+defaults. Increment `versionCode` and `versionName` in `app/build.gradle`; run tests and compare lint
+against the same unmodified upstream version. Build with the preserved key and test on a spare TV.
+Commit the resulting changes, push `trakt-test`, tag `akari-test-v<versionName>`, and publish the matching
+signed APK and checksums on that tag. Never overwrite a published release with different bytes.
 
-Akari uses data from [Trakt](https://trakt.tv), [Simkl](https://simkl.com), [MDBList](https://mdblist.com),
-[TMDB](https://www.themoviedb.org), [OMDb](https://www.omdbapi.com), [Cinemeta](https://v3-cinemeta.strem.io),
-[Metahub](https://images.metahub.space), [TVmaze](https://www.tvmaze.com), [SeriesGraph](https://seriesgraph.com),
-[Open-Meteo](https://open-meteo.com) and [ipwho.is](https://ipwho.is). This product uses the TMDB API but is not endorsed
-or certified by TMDB. Akari is not affiliated with any of these services, nor with Nuvio or Google.
+## Validation and limitations
 
-Design inspired by Google TV and [Nuvio](https://github.com/NuvioMedia/NuvioTV). The rating logos come from Nuvio and belong
-to their owners. Font: [Outfit](https://fonts.google.com/specimen/Outfit), under the SIL Open Font License
-(`FONT-LICENSE-OFL.txt`).
+Eight unit tests cover OAuth request payloads/hosts, the recent-history bound, and rate-limit cooldown.
+The test3 build was verified on a Fire TV Stick 4K Max (2nd generation), Fire OS 8.1.8.5: Trakt login,
+Continue Watching, Upcoming, and matching-episode handoff to Stremio worked. Home still returned to the
+original launcher. Test4 packages the same behavior with explicit signing and build automation;
+its APK is checked locally and in CI but has not been installed on another TV.
 
-## License
+Full `lintRelease` currently reports 145 existing upstream errors. Comparison of the fork against
+unmodified v0.8.2 found no additional errors. The only new warning is a newer version being available
+for the test-only JSON library. Lint has not been disabled; it is not the CI gate until upstream's
+baseline is addressed. Successful unit tests and release assembly are the CI gates.
 
-[GNU General Public License v3.0](LICENSE).
+Automatic token renewal has unit coverage but has not been exercised through a live expiry. Optional
+TMDB artwork/features can differ because this fork does not bundle upstream's private TMDB API key.
+The title catalog and fallback artwork work without it. Home interception and reboot behavior depend
+on each TV's separately configured helper; installing this APK alone does not configure those.
+
+For general launcher features, consult [upstream Akari](https://github.com/konvar/Akari).

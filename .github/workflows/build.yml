@@ -1,0 +1,37 @@
+name: Build Akari Test
+
+on:
+  push:
+    branches: [trakt-test]
+    tags: ["akari-test-v*"]
+  pull_request:
+    branches: [trakt-test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - name: Install Android SDK components
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Test and assemble unsigned APK
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+      - name: Upload unsigned build and test reports
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: Akari-Test-unsigned-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/release/*unsigned.apk
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
+          if-no-files-found: error

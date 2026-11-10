@@ -31,7 +31,7 @@ final class Trakt {
     private static final String TAG = "TvHomeTrakt";
     private static final String API = "https://api.trakt.tv";
     private static final String PREFS = "trakt";
-    private static final int UP_NEXT_SHOWS = Integer.MAX_VALUE;
+    private static final int UP_NEXT_SHOWS = 40;
     static final int MAX_ITEMS = Integer.MAX_VALUE;
 
     static final class DeviceCode {
@@ -173,12 +173,8 @@ final class Trakt {
         return !BuildConfig.TRAKT_CLIENT_ID.isEmpty() ? BuildConfig.TRAKT_CLIENT_ID : Keys.get(Keys.TRAKT_ID);
     }
 
-    static String clientSecret() {
-        return !BuildConfig.TRAKT_CLIENT_SECRET.isEmpty() ? BuildConfig.TRAKT_CLIENT_SECRET : Keys.get(Keys.TRAKT_SECRET);
-    }
-
     static boolean configured() {
-        return !clientId().isEmpty() && !clientSecret().isEmpty();
+        return !clientId().isEmpty();
     }
 
     static boolean signedIn(Context c) {
@@ -198,14 +194,14 @@ final class Trakt {
     // ---- device sign-in ----
 
     static DeviceCode requestCode() throws IOException, JSONException {
-        JSONObject body = new JSONObject().put("client_id", clientId());
-        Net.Response r = Net.json("POST", API + "/oauth/device/code", new HashMap<>(), body.toString());
+        JSONObject body = TraktOAuth.deviceCode(clientId());
+        Net.Response r = Net.jsonOnce("POST", TraktOAuth.DEVICE_CODE_URL, new HashMap<>(), body.toString());
         if (r.code != 200) throw new IOException("device code HTTP " + r.code);
         JSONObject j = new JSONObject(r.body);
         DeviceCode d = new DeviceCode();
         d.deviceCode = j.getString("device_code");
         d.userCode = j.getString("user_code");
-        d.verificationUrl = j.optString("verification_url", "https://trakt.tv/activate");
+        d.verificationUrl = j.optString("verification_url", "https://auth.trakt.tv/activate");
         d.interval = Math.max(1, j.optInt("interval", 5));
         d.expiresAt = System.currentTimeMillis() + j.optInt("expires_in", 600) * 1000L;
         return d;
@@ -213,16 +209,17 @@ final class Trakt {
 
     /** One poll: true once the user approved and tokens are stored, false while still pending. */
     static boolean pollToken(Context c, DeviceCode d) throws IOException, JSONException {
-        JSONObject body = new JSONObject()
-                .put("code", d.deviceCode)
-                .put("client_id", clientId())
-                .put("client_secret", clientSecret());
-        Net.Response r = Net.json("POST", API + "/oauth/device/token", new HashMap<>(), body.toString());
+        JSONObject body = TraktOAuth.deviceToken(clientId(), d.deviceCode);
+        Net.Response r = Net.jsonOnce("POST", TraktOAuth.DEVICE_TOKEN_URL, new HashMap<>(), body.toString());
         if (r.code == 200) {
             store(c, new JSONObject(r.body));
             return true;
         }
-        if (r.code == 400 || r.code == 429) return false; // pending or polling too fast
+        if (r.code == 400) return false; // waiting for approval
+        if (r.code == 429) {
+            d.interval += 5; // slow down subsequent device polls
+            return false;
+        }
         throw new IOException("device token HTTP " + r.code);
     }
 
@@ -264,15 +261,10 @@ final class Trakt {
             String now = p.getString("access", null);
             if (now == null) return null;
             if (!now.equals(stale) && System.currentTimeMillis() < p.getLong("expires", 0) - 3600 * 1000L) return now;
-            JSONObject body = new JSONObject()
-                    .put("refresh_token", p.getString("refresh", ""))
-                    .put("client_id", clientId())
-                    .put("client_secret", clientSecret())
-                    .put("redirect_uri", "urn:ietf:wg:oauth:2.0:oob")
-                    .put("grant_type", "refresh_token");
+            JSONObject body = TraktOAuth.refreshToken(clientId(), p.getString("refresh", ""));
             Net.Response r;
             try {
-                r = Net.json("POST", API + "/oauth/token", new HashMap<>(), body.toString());
+                r = Net.jsonOnce("POST", TraktOAuth.TOKEN_URL, new HashMap<>(), body.toString());
             } catch (IOException e) {
                 // No network (TV just woke up): keep the sign-in and the current token.
                 android.util.Log.w("TvHomeTrakt", "token renewal: no network, keeping sign-in");
@@ -442,9 +434,11 @@ final class Trakt {
             startedShows.add(imdb);
             // Trakt no longer lists watched seasons here, so whether a show is finished comes from its progress
             // (cached per show until it is watched again). Hidden shows are checked too, for their checkmark.
-            if (!seen.contains(imdb)) unfinished.add(w);
+            if (!seen.contains(imdb) && !hiddenShows.contains(imdb)) unfinished.add(w);
         }
         watchedShows = startedShows;
+        // First sync must not query every show in a large lifetime history before displaying any rows.
+        unfinished = TraktHistory.recent(unfinished, UP_NEXT_SHOWS);
 
         // Next episode of each unfinished show, eight at a time; cached until the show is watched again.
         SharedPreferences cache = c.getSharedPreferences("trakt_progress", Context.MODE_PRIVATE);

@@ -475,8 +475,7 @@ public class SettingsActivity extends Activity {
         // Builds without their own Trakt / Simkl app (public releases): use yours, made at trakt.tv/oauth/applications
         // and simkl.com/settings/developer (redirect URI urn:ietf:wg:oauth:2.0:oob).
         if (BuildConfig.TRAKT_CLIENT_ID.isEmpty()) {
-            keyCard("Trakt app Client ID", Keys.TRAKT_ID, "From trakt.tv/oauth/applications (your own app)");
-            keyCard("Trakt app Client Secret", Keys.TRAKT_SECRET, "From the same Trakt app");
+            keyCard("Trakt app Client ID", Keys.TRAKT_ID, "Client ID from your Trakt application. No Client Secret is needed.");
         }
         if (BuildConfig.SIMKL_CLIENT_ID.isEmpty()) {
             keyCard("Simkl app Client ID", Keys.SIMKL_ID, "From simkl.com/settings/developer (your own app)");
@@ -588,7 +587,7 @@ public class SettingsActivity extends Activity {
             String sub;
             switch (p) {
                 case Tracking.TRAKT:
-                    sub = !Trakt.configured() ? "Add your Trakt app ID and secret in API keys first."
+                    sub = !Trakt.configured() ? "Add your Trakt app Client ID in API keys first."
                             : connected ? "Connected. Continue Watching, Upcoming, lists and checkmarks. Press again to sign out."
                             : "Press to connect with a QR code.";
                     break;
@@ -1005,7 +1004,13 @@ public class SettingsActivity extends Activity {
                                     return;
                                 }
                             }
-                        } catch (Exception ignored) {
+                            Net.MAIN.post(() -> {
+                                if (d.dialog.isShowing()) d.status("Code expired. Press Back and connect again.");
+                            });
+                        } catch (Exception e) {
+                            Net.MAIN.post(() -> {
+                                if (d.dialog.isShowing()) d.status("Sign-in failed. Press Back and connect again.");
+                            });
                         }
                     });
                 });

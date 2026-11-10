@@ -7,10 +7,11 @@
 
     <!-- Apps shown first in "Your apps", in this order. The other apps follow alphabetically. -->
     <string-array name="dock_apps">
-        <item>com.nuvio.tv.updated</item>
+        <item>org.smarttube.stable</item>
+        <item>com.stremio.one</item>
+        <item>com.sameoldtable.tv</item>
+        <item>me.premiumize.app</item>
         <item>io.gh.reisxd.tizentube.cobalt</item>
-        <item>com.nuvio.tv</item>
-        <item>org.smarttube.beta</item>
     </string-array>
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs button already covers). -->
@@ -26,7 +27,7 @@
     </string-array>
 
     <!-- The app that opens movies and shows, through its nuvio://meta?type=…&id=… deep link. -->
-    <string name="content_package" translatable="false">com.nuvio.tv.updated</string>
+    <string name="content_package" translatable="false">com.stremio.one</string>
 
     <!-- Stremio catalog addon the home rows and search come from. Cinemeta is public and needs no account. -->
     <string name="addon_url" translatable="false">https://v3-cinemeta.strem.io</string>
